@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,34 +20,34 @@ type RegisterResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		ClientId        int      `json:"clientId"`
-		ClientName      string   `json:"clientName"`
-		HostIp          string   `json:"hostIp"`
-		ReportInterval  int      `json:"reportInterval"`
-		MonitorItems    []string `json:"monitorItems"`
+		ClientId       int      `json:"clientId"`
+		ClientName     string   `json:"clientName"`
+		HostIp         string   `json:"hostIp"`
+		ReportInterval int      `json:"reportInterval"`
+		MonitorItems   []string `json:"monitorItems"`
 	} `json:"data"`
 }
 
 type MonitorData struct {
-	ClientId              int     `json:"clientId"`
-	CpuUsage              float64 `json:"cpuUsage"`
-	PhysicalMemoryUsed    int64   `json:"physicalMemoryUsed"`
-	PhysicalMemoryTotal   int64   `json:"physicalMemoryTotal"`
-	VirtualMemoryUsed     int64   `json:"virtualMemoryUsed"`
-	VirtualMemoryTotal    int64   `json:"virtualMemoryTotal"`
-	DiskUsage             float64 `json:"diskUsage"`
-	DiskTotal             int64   `json:"diskTotal"`
-	DiskUsed              int64   `json:"diskUsed"`
-	ProcessCount          int     `json:"processCount"`
-	ProcessInfo           string  `json:"processInfo"`
-	ReportTime            string  `json:"reportTime"`
+	ClientId            int     `json:"clientId"`
+	CpuUsage            float64 `json:"cpuUsage"`
+	PhysicalMemoryUsed  int64   `json:"physicalMemoryUsed"`
+	PhysicalMemoryTotal int64   `json:"physicalMemoryTotal"`
+	VirtualMemoryUsed   int64   `json:"virtualMemoryUsed"`
+	VirtualMemoryTotal  int64   `json:"virtualMemoryTotal"`
+	DiskUsage           float64 `json:"diskUsage"`
+	DiskTotal           int64   `json:"diskTotal"`
+	DiskUsed            int64   `json:"diskUsed"`
+	ProcessCount        int     `json:"processCount"`
+	ProcessInfo         string  `json:"processInfo"`
+	ReportTime          string  `json:"reportTime"`
 }
 
 var (
-	clientId         int
-	serverAddr       string
-	reportInterval   int
-	monitorItems     []string
+	clientId       int
+	serverAddr     string
+	reportInterval int
+	monitorItems   []string
 )
 
 func main() {
@@ -82,7 +82,7 @@ func main() {
 
 func registerClient(name, ip string) error {
 	hostname, _ := os.Hostname()
-	
+
 	osType := runtime.GOOS
 	if osType == "windows" {
 		osType = "WINDOWS"
@@ -108,7 +108,7 @@ func registerClient(name, ip string) error {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func registerClient(name, ip string) error {
 
 func reportMonitorData() {
 	data := MonitorData{
-		ClientId: clientId,
+		ClientId:   clientId,
 		ReportTime: time.Now().Format("2006-01-02T15:04:05"),
 	}
 
@@ -165,7 +165,7 @@ func reportMonitorData() {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		log.Printf("Report failed, status: %d, message: %s", resp.StatusCode, string(body))
 	} else {
 		log.Printf("Data reported successfully for client %d", clientId)
@@ -183,6 +183,7 @@ func getWindowsCPUUsage() float64 {
 	cmd := exec.Command("wmic", "cpu", "get", "loadpercentage")
 	output, err := cmd.Output()
 	if err != nil {
+		log.Printf("Failed to get CPU usage: %v", err)
 		return 0
 	}
 
@@ -200,8 +201,9 @@ func getWindowsCPUUsage() float64 {
 }
 
 func getLinuxCPUUsage() float64 {
-	content, err := ioutil.ReadFile("/proc/stat")
+	content, err := os.ReadFile("/proc/stat")
 	if err != nil {
+		log.Printf("Failed to read /proc/stat: %v", err)
 		return 0
 	}
 
@@ -214,7 +216,7 @@ func getLinuxCPUUsage() float64 {
 				nice, _ := strconv.ParseFloat(fields[2], 64)
 				system, _ := strconv.ParseFloat(fields[3], 64)
 				idle, _ := strconv.ParseFloat(fields[4], 64)
-				
+
 				total := user + nice + system + idle
 				if total == 0 {
 					return 0
@@ -237,6 +239,7 @@ func getWindowsMemoryInfo() (used, total int64) {
 	cmd := exec.Command("wmic", "computersystem", "get", "totalphysicalmemory")
 	output, err := cmd.Output()
 	if err != nil {
+		log.Printf("Failed to get total memory: %v", err)
 		return 0, 0
 	}
 
@@ -252,6 +255,7 @@ func getWindowsMemoryInfo() (used, total int64) {
 	cmd = exec.Command("wmic", "os", "get", "freephysicalmemory")
 	output, err = cmd.Output()
 	if err != nil {
+		log.Printf("Failed to get free memory: %v", err)
 		return 0, total
 	}
 
@@ -268,8 +272,9 @@ func getWindowsMemoryInfo() (used, total int64) {
 }
 
 func getLinuxMemoryInfo() (used, total int64) {
-	content, err := ioutil.ReadFile("/proc/meminfo")
+	content, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
+		log.Printf("Failed to read /proc/meminfo: %v", err)
 		return 0, 0
 	}
 
@@ -305,6 +310,7 @@ func getWindowsVirtualMemoryInfo() (used, total int64) {
 	cmd := exec.Command("wmic", "pagefile", "get", "allocatedbasesize")
 	output, err := cmd.Output()
 	if err != nil {
+		log.Printf("Failed to get virtual memory: %v", err)
 		return 0, 0
 	}
 
@@ -322,8 +328,9 @@ func getWindowsVirtualMemoryInfo() (used, total int64) {
 }
 
 func getLinuxVirtualMemoryInfo() (used, total int64) {
-	content, err := ioutil.ReadFile("/proc/meminfo")
+	content, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
+		log.Printf("Failed to read /proc/meminfo: %v", err)
 		return 0, 0
 	}
 
@@ -355,6 +362,7 @@ func getWindowsDiskUsage() (usage float64, total, used int64) {
 	cmd := exec.Command("wmic", "logicaldisk", "get", "size,freespace")
 	output, err := cmd.Output()
 	if err != nil {
+		log.Printf("Failed to get disk usage: %v", err)
 		return 0, 0, 0
 	}
 
@@ -379,8 +387,9 @@ func getWindowsDiskUsage() (usage float64, total, used int64) {
 }
 
 func getLinuxDiskUsage() (usage float64, total, used int64) {
-	content, err := ioutil.ReadFile("/proc/partitions")
+	content, err := os.ReadFile("/proc/partitions")
 	if err != nil {
+		log.Printf("Failed to read /proc/partitions: %v", err)
 		return 0, 0, 0
 	}
 
@@ -392,7 +401,7 @@ func getLinuxDiskUsage() (usage float64, total, used int64) {
 				name := fields[3]
 				if strings.HasPrefix(name, "sd") && len(name) == 3 {
 					statPath := fmt.Sprintf("/sys/block/%s/size", name)
-					sizeContent, err := ioutil.ReadFile(statPath)
+					sizeContent, err := os.ReadFile(statPath)
 					if err != nil {
 						continue
 					}
@@ -418,6 +427,7 @@ func getWindowsProcessCount() int {
 	cmd := exec.Command("tasklist", "/v", "/fo", "csv")
 	output, err := cmd.Output()
 	if err != nil {
+		log.Printf("Failed to get process count: %v", err)
 		return 0
 	}
 
@@ -426,8 +436,9 @@ func getWindowsProcessCount() int {
 }
 
 func getLinuxProcessCount() int {
-	files, err := ioutil.ReadDir("/proc")
+	files, err := os.ReadDir("/proc")
 	if err != nil {
+		log.Printf("Failed to read /proc: %v", err)
 		return 0
 	}
 
