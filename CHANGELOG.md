@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2026-05-21 16:45:00] 管理员：添加数据库表开发规范（完善代码风格指南）
   - 影响范围：code-style.md
   - 相关文档：code-style.md
+- [2026-05-21 17:00:00] 管理员：创建项目目录结构（后端、前端、客户端）
+  - 影响范围：backend/、frontend/、client/
+  - 相关文档：architecture.md
 
 ### Deprecated
 - None
