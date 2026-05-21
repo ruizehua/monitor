@@ -19,6 +19,38 @@
 - 大括号单独占行
 - 使用Lombok注解
 
+### 三层架构
+
+#### 控制层 (Controller)
+- 包名: `controller`
+- 类名后缀: `Controller`
+- 职责: 处理HTTP请求、参数校验、调用Service层、返回响应
+- 不包含业务逻辑
+- 使用`@RestController`注解
+
+#### 业务层 (Service)
+- 包名: `service`
+- 类名后缀: `Service`
+- 接口名后缀: `Service`
+- 实现类后缀: `ServiceImpl`
+- 职责: 封装业务逻辑、事务管理、调用Repository层
+
+#### 数据层 (Repository)
+- 包名: `repository`
+- 类名后缀: `Repository`
+- 职责: 数据访问、SQL执行
+- 使用Spring Data JPA或MyBatis
+
+### 分层依赖
+- Controller → Service → Repository
+- 禁止跨层调用
+- Service之间可相互调用
+
+### 异常处理
+- 使用统一异常处理
+- 自定义业务异常类
+- 异常信息清晰明确
+
 ## Go规范
 
 ### 命名
