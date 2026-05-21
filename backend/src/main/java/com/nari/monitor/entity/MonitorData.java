@@ -14,7 +14,7 @@ public class MonitorData {
     @Column(name = "client_id", nullable = false)
     private Long clientId;
 
-    @Column(name = "cpu_usage", precision = 5, scale = 2)
+    @Column(name = "cpu_usage")
     private Double cpuUsage;
 
     @Column(name = "physical_memory_used")
@@ -29,7 +29,7 @@ public class MonitorData {
     @Column(name = "virtual_memory_total")
     private Long virtualMemoryTotal;
 
-    @Column(name = "disk_usage", precision = 5, scale = 2)
+    @Column(name = "disk_usage")
     private Double diskUsage;
 
     @Column(name = "disk_total")

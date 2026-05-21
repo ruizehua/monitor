@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:sqlite:./data/example_db.db
+    url: jdbc:sqlite:./data/monitor.db
     driver-class-name: org.sqlite.JDBC
     hikari:
       maximum-pool-size: 20
@@ -21,11 +21,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
 
 monitor:
   default-report-interval: 30
