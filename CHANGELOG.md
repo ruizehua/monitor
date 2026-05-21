@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 监控数据查询API
 
 ### Changed
+- [2026-05-21 15:40:00] 管理员：分离功能需求和非功能需求
+  - 影响范围：requirements.md, non-functional.md
+  - 相关文档：requirements.md, non-functional.md
 - [2026-05-21 15:35:00] 管理员：整理功能需求和规范文档
   - 影响范围：requirements.md, README.md, contribution.md, non-functional.md
   - 相关文档：requirements.md, README.md, contribution.md, non-functional.md
