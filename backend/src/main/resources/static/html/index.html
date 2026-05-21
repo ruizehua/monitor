@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库监控系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 24px; margin-bottom: 24px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 18px; font-weight: 600; color: #1a202c; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { background: #e53e3e; color: white; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f7fafc; font-weight: 600; color: #4a5568; }
+        tr:hover { background: #f7fafc; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 480px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 18px; font-weight: 600; }
+        .close-btn { cursor: pointer; font-size: 24px; color: #718096; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .stat-label { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+        .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+        .progress-fill.cpu { background: linear-gradient(90deg, #48bb78, #38a169); }
+        .progress-fill.memory { background: linear-gradient(90deg, #ed8936, #dd6b20); }
+        .progress-fill.disk { background: linear-gradient(90deg, #f56565, #e53e3e); }
+        .loading { text-align: center; padding: 40px; color: #718096; }
+        .empty-state { text-align: center; padding: 40px; color: #718096; }
+        .error { color: #e53e3e; font-size: 14px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>数据库监控系统</h1>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="clientCount">0</div>
+                <div class="stat-label">在线客户端</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="dataCount">0</div>
+                <div class="stat-label">监控数据条数</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">客户端列表</div>
+                <button class="btn btn-primary" onclick="showRegisterModal()">注册客户端</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>客户端名称</th>
+                        <th>主机IP</th>
+                        <th>主机名</th>
+                        <th>操作系统</th>
+                        <th>上报间隔</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="clientTableBody"></tbody>
+            </table>
+            <div class="empty-state" id="clientEmptyState" style="display: none;">暂无客户端数据</div>
+        </div>
+    </div>
+
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">注册客户端</div>
+                <span class="close-btn" onclick="closeRegisterModal()">&times;</span>
+            </div>
+            <div>
+                <div class="form-group">
+                    <label>客户端名称 *</label>
+                    <input type="text" id="regClientName" placeholder="请输入客户端名称">
+                </div>
+                <div class="form-group">
+                    <label>主机IP *</label>
+                    <input type="text" id="regHostIp" placeholder="请输入主机IP">
+                </div>
+                <div class="form-group">
+                    <label>主机名</label>
+                    <input type="text" id="regHostName" placeholder="请输入主机名">
+                </div>
+                <div class="form-group">
+                    <label>操作系统类型</label>
+                    <input type="text" id="regOsType" placeholder="WINDOWS/LINUX">
+                </div>
+                <div class="error" id="registerError"></div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="registerClient()">注册</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="monitorModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <div class="modal-title" id="monitorTitle">监控详情</div>
+                <span class="close-btn" onclick="closeMonitorModal()">&times;</span>
+            </div>
+            <div>
+                <div id="monitorLoading" class="loading">加载中...</div>
+                <div id="monitorContent" style="display: none;">
+                    <h3 style="margin-bottom: 16px;">实时监控数据</h3>
+                    <div class="stats-grid" style="margin-bottom: 24px;">
+                        <div style="background: #fff; border: 1px solid #e2e8f0; color: #1a202c;">
+                            <div class="stat-value" id="cpuValue">0%</div>
+                            <div class="stat-label">CPU使用率</div>
+                            <div class="progress-bar" style="margin-top: 8px;">
+                                <div class="progress-fill cpu" id="cpuProgress"></div>
+                            </div>
+                        </div>
+                        <div style="background: #fff; border: 1px solid #e2e8f0; color: #1a202c;">
+                            <div class="stat-value" id="memoryValue">0%</div>
+                            <div class="stat-label">内存使用率</div>
+                            <div class="progress-bar" style="margin-top: 8px;">
+                                <div class="progress-fill memory" id="memoryProgress"></div>
+                            </div>
+                        </div>
+                        <div style="background: #fff; border: 1px solid #e2e8f0; color: #1a202c;">
+                            <div class="stat-value" id="diskValue">0%</div>
+                            <div class="stat-label">磁盘使用率</div>
+                            <div class="progress-bar" style="margin-top: 8px;">
+                                <div class="progress-fill disk" id="diskProgress"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <h4>内存详情</h4>
+                        <p>物理内存: <span id="physicalMem">-</span></p>
+                        <p>虚拟内存: <span id="virtualMem">-</span></p>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <h4>磁盘详情</h4>
+                        <p>磁盘总量: <span id="diskTotal">-</span></p>
+                        <p>已使用: <span id="diskUsed">-</span></p>
+                    </div>
+                    <div>
+                        <h4>进程信息</h4>
+                        <p>进程数量: <span id="processCount">-</span></p>
+                    </div>
+                </div>
+                <div id="monitorEmpty" class="empty-state" style="display: none;">暂无监控数据</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        function formatBytes(bytes) {
+            if (bytes === null || bytes === undefined) return '-';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+
+        async function fetchClients() {
+            try {
+                const response = await fetch(`${API_BASE}/client/list`);
+                const result = await response.json();
+                if (result.code === 200) {
+                    renderClients(result.data);
+                    document.getElementById('clientCount').textContent = result.data.length;
+                }
+            } catch (error) {
+                console.error('Failed to fetch clients:', error);
+            }
+        }
+
+        function renderClients(clients) {
+            const tbody = document.getElementById('clientTableBody');
+            const emptyState = document.getElementById('clientEmptyState');
+            
+            if (clients.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            tbody.innerHTML = clients.map(client => `
+                <tr>
+                    <td>${client.id}</td>
+                    <td>${client.clientName}</td>
+                    <td>${client.hostIp}</td>
+                    <td>${client.hostName || '-'}</td>
+                    <td>${client.osType || '-'}</td>
+                    <td>${client.reportInterval}秒</td>
+                    <td>${client.isEnabled === 1 ? '启用' : '禁用'}</td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;" onclick="showMonitorDetail(${client.id}, '${client.clientName}')">查看监控</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showRegisterModal() {
+            document.getElementById('registerModal').classList.add('active');
+            document.getElementById('registerError').textContent = '';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').classList.remove('active');
+            document.getElementById('regClientName').value = '';
+            document.getElementById('regHostIp').value = '';
+            document.getElementById('regHostName').value = '';
+            document.getElementById('regOsType').value = '';
+        }
+
+        async function registerClient() {
+            const clientName = document.getElementById('regClientName').value;
+            const hostIp = document.getElementById('regHostIp').value;
+            const hostName = document.getElementById('regHostName').value;
+            const osType = document.getElementById('regOsType').value;
+            const errorElement = document.getElementById('registerError');
+
+            if (!clientName || !hostIp) {
+                errorElement.textContent = '请填写必填字段';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/client/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientName, hostIp, hostName, osType })
+                });
+                const result = await response.json();
+                if (result.code === 200) {
+                    closeRegisterModal();
+                    fetchClients();
+                } else {
+                    errorElement.textContent = result.message;
+                }
+            } catch (error) {
+                errorElement.textContent = '注册失败，请重试';
+            }
+        }
+
+        function showMonitorDetail(clientId, clientName) {
+            document.getElementById('monitorTitle').textContent = `${clientName} - 监控详情`;
+            document.getElementById('monitorModal').classList.add('active');
+            document.getElementById('monitorLoading').style.display = 'block';
+            document.getElementById('monitorContent').style.display = 'none';
+            document.getElementById('monitorEmpty').style.display = 'none';
+            fetchMonitorData(clientId);
+        }
+
+        function closeMonitorModal() {
+            document.getElementById('monitorModal').classList.remove('active');
+        }
+
+        async function fetchMonitorData(clientId) {
+            try {
+                const response = await fetch(`${API_BASE}/monitor/${clientId}/latest`);
+                const result = await response.json();
+                if (result.code === 200 && result.data) {
+                    renderMonitorData(result.data);
+                    document.getElementById('monitorLoading').style.display = 'none';
+                    document.getElementById('monitorContent').style.display = 'block';
+                } else {
+                    document.getElementById('monitorLoading').style.display = 'none';
+                    document.getElementById('monitorEmpty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to fetch monitor data:', error);
+                document.getElementById('monitorLoading').style.display = 'none';
+                document.getElementById('monitorEmpty').style.display = 'block';
+            }
+        }
+
+        function renderMonitorData(data) {
+            const cpuUsage = data.cpuUsage || 0;
+            const memoryUsage = data.physicalMemoryTotal ? 
+                ((data.physicalMemoryUsed || 0) / data.physicalMemoryTotal * 100).toFixed(2) : 0;
+            const diskUsage = data.diskUsage || 0;
+
+            document.getElementById('cpuValue').textContent = cpuUsage + '%';
+            document.getElementById('cpuProgress').style.width = cpuUsage + '%';
+            document.getElementById('memoryValue').textContent = memoryUsage + '%';
+            document.getElementById('memoryProgress').style.width = memoryUsage + '%';
+            document.getElementById('diskValue').textContent = diskUsage + '%';
+            document.getElementById('diskProgress').style.width = diskUsage + '%';
+
+            document.getElementById('physicalMem').textContent = 
+                `${formatBytes(data.physicalMemoryUsed)} / ${formatBytes(data.physicalMemoryTotal)}`;
+            document.getElementById('virtualMem').textContent = 
+                `${formatBytes(data.virtualMemoryUsed)} / ${formatBytes(data.virtualMemoryTotal)}`;
+            document.getElementById('diskTotal').textContent = formatBytes(data.diskTotal);
+            document.getElementById('diskUsed').textContent = formatBytes(data.diskUsed);
+            document.getElementById('processCount').textContent = data.processCount || 0;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchClients();
+        });
+    </script>
+</body>
+</html>
