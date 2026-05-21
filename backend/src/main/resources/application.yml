@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:sqlite:./data/example_db.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      max-wait: 10000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+monitor:
+  default-report-interval: 30
+  default-monitor-items:
+    - cpu_usage
+    - physical_memory
+    - virtual_memory
+    - disk_usage
+    - process_info
+
+logging:
+  level:
+    com.nari.monitor: DEBUG
+    org.hibernate.SQL: DEBUG
