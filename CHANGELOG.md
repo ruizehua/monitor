@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2026-05-21 17:15:00] 管理员：配置本地JDK和Go环境
   - 影响范围：pom.xml, deployment.md
   - 相关文档：design.md, deployment.md
+- [2026-05-21 17:20:00] 管理员：整理功能需求和规范文档
+  - 影响范围：requirements.md, README.md, contribution.md, non-functional.md
+  - 相关文档：requirements.md, README.md, contribution.md, non-functional.md
 
 ### Deprecated
 - None
