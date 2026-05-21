@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2026-05-21 17:10:00] 管理员：完善技术规范文档（architecture、design、data-model、api、security、deployment）
   - 影响范围：*.md文档
   - 相关文档：architecture.md, design.md, data-model.md, api.md, security.md, deployment.md
+- [2026-05-21 17:15:00] 管理员：配置本地JDK和Go环境
+  - 影响范围：pom.xml, deployment.md
+  - 相关文档：design.md, deployment.md
 
 ### Deprecated
 - None
