@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2026-05-21 17:00:00] 管理员：创建项目目录结构（后端、前端、客户端）
   - 影响范围：backend/、frontend/、client/
   - 相关文档：architecture.md
+- [2026-05-21 17:05:00] 管理员：调整前端架构，整合到后端项目（HTML5+JS+CSS3）
+  - 影响范围：backend/src/main/resources/static/
+  - 相关文档：architecture.md
 
 ### Deprecated
 - None
