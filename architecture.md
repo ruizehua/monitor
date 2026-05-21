@@ -60,13 +60,29 @@
 
 ```
 monitor/
-├── backend/                    # Java服务端
-│   ├── src/main/java/          # Java源码
-│   ├── src/main/resources/     # 配置文件
-│   └── pom.xml                 # Maven配置
+├── backend/                    # Java服务端（Spring Boot）
+│   ├── .mvn/wrapper/           # Maven Wrapper配置
+│   ├── mvnw.cmd               # Maven启动脚本
+│   ├── pom.xml                 # Maven依赖配置
+│   └── src/
+│       ├── main/
+│       │   ├── java/com/nari/monitor/
+│       │   │   ├── controller/     # REST API控制层
+│       │   │   ├── service/        # 业务逻辑层
+│       │   │   ├── repository/     # 数据访问层
+│       │   │   ├── entity/         # 数据库实体
+│       │   │   ├── dto/            # 数据传输对象
+│       │   │   ├── config/         # 配置类
+│       │   │   └── exception/      # 异常处理
+│       │   └── resources/
+│       │       ├── static/         # 前端静态资源
+│       │       │   ├── css/        # CSS样式
+│       │       │   ├── js/         # JavaScript脚本
+│       │       │   ├── images/     # 图片资源
+│       │       │   └── html/       # HTML页面
+│       │       └── application.yml # 应用配置
+│       └── test/                  # 测试代码
 ├── client/                     # Go客户端
-│   ├── main.go                 # 主入口
-│   ├── client.go               # HTTP客户端
-│   └── collector.go            # 监控数据采集
+│   └── src/                     # Go源码
 └── specs/                      # 规格文档
 ```
