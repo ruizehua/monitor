@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 监控数据查询API
 
 ### Changed
+- [2026-05-22 09:50:00] 管理员：更新Docker部署规则（增加docker-compose和热更新方式）
+  - 影响范围：AGENTS.md
+  - 相关文档：AGENTS.md, deployment.md
+- [2026-05-22 09:45:00] 管理员：添加Docker部署规则（修改需求或代码后需重新部署Docker）
+  - 影响范围：AGENTS.md
+  - 相关文档：AGENTS.md, deployment.md
 - [2026-05-21 15:50:00] 管理员：生成完整代码实现（Java后端+Go客户端+HTML前端）
   - 影响范围：backend/src/main/java/, backend/src/main/resources/, client/src/main.go
   - 相关文档：requirements.md, design.md
