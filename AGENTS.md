@@ -85,7 +85,13 @@
    └─> 确保编译通过
    └─> 确保测试通过
 
-5. 提交代码
+5. 更新Docker镜像并重新部署
+   └─> 停止现有容器：docker stop <container_name>
+   └─> 删除现有容器：docker rm <container_name>
+   └─> 重新构建镜像：docker build -t <image_name> .
+   └─> 启动新容器：docker run -d ... <image_name>
+
+6. 提交代码
    └─> git commit
    └─> git push
 ```
