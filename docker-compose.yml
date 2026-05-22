@@ -1,0 +1,13 @@
+services:
+  monitor-server:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: monitor-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

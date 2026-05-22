@@ -62,6 +62,7 @@ func main() {
 	}
 
 	serverAddr = *server
+	_ = *interval
 
 	err := registerClient(*name, *ip)
 	if err != nil {
@@ -120,7 +121,8 @@ func registerClient(name, ip string) error {
 	}
 
 	if result.Code != 200 {
-		return fmt.Errorf("registration failed: %s", result.Message)
+		log.Printf("Registration failed: %s, trying to get existing client...", result.Message)
+		return getExistingClient(name)
 	}
 
 	clientId = result.Data.ClientId
@@ -128,6 +130,43 @@ func registerClient(name, ip string) error {
 	monitorItems = result.Data.MonitorItems
 
 	return nil
+}
+
+func getExistingClient(name string) error {
+	resp, err := http.Get(serverAddr + "/api/client/list")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var result map[string]interface{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return err
+	}
+
+	if result["code"] != float64(200) {
+		return fmt.Errorf("failed to get client list")
+	}
+
+	clients := result["data"].([]interface{})
+	for _, client := range clients {
+		clientMap := client.(map[string]interface{})
+		if clientMap["clientName"] == name {
+			clientId = int(clientMap["id"].(float64))
+			reportInterval = int(clientMap["reportInterval"].(float64))
+			monitorItems = []string{"cpu_usage", "physical_memory", "virtual_memory", "disk_usage", "process_info"}
+			log.Printf("Found existing client: id=%d, name=%s", clientId, name)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("client not found")
 }
 
 func reportMonitorData() {
@@ -387,33 +426,32 @@ func getWindowsDiskUsage() (usage float64, total, used int64) {
 }
 
 func getLinuxDiskUsage() (usage float64, total, used int64) {
-	content, err := os.ReadFile("/proc/partitions")
+	cmd := exec.Command("df", "-k", "/")
+	output, err := cmd.Output()
 	if err != nil {
-		log.Printf("Failed to read /proc/partitions: %v", err)
+		log.Printf("Failed to get disk usage: %v", err)
 		return 0, 0, 0
 	}
 
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "sd") && !strings.Contains(line, "loop") {
-			fields := strings.Fields(line)
-			if len(fields) >= 5 {
-				name := fields[3]
-				if strings.HasPrefix(name, "sd") && len(name) == 3 {
-					statPath := fmt.Sprintf("/sys/block/%s/size", name)
-					sizeContent, err := os.ReadFile(statPath)
-					if err != nil {
-						continue
-					}
-					sectors, _ := strconv.ParseInt(strings.TrimSpace(string(sizeContent)), 10, 64)
-					total = sectors * 512
-					break
-				}
+	lines := strings.Split(string(output), "\n")
+	for i, line := range lines {
+		if i == 0 {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) >= 6 {
+			totalKB, _ := strconv.ParseInt(fields[1], 10, 64)
+			usedKB, _ := strconv.ParseInt(fields[2], 10, 64)
+			total = totalKB * 1024
+			used = usedKB * 1024
+			if total > 0 {
+				usage = float64(used) / float64(total) * 100
 			}
+			return
 		}
 	}
 
-	return 0, total, 0
+	return 0, 0, 0
 }
 
 func getProcessCount() int {

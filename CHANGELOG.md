@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 监控数据查询API
 
 ### Changed
+- [2026-05-22 14:30:00] 管理员：优化前端页面显示效果和修复多个功能问题
+  - 影响范围：backend/src/main/resources/static/html/index.html, client/src/main.go, backend/Dockerfile, backend/src/main/java/com/nari/monitor/config/WebMvcConfig.java
+  - 相关文档：design.md
+  - 变更内容：
+    1. 优化前端页面显示效果（现代化深色主题设计）
+    2. 修复Go客户端GLIBC兼容性问题（使用CGO_ENABLED=0静态编译）
+    3. 修复磁盘数据获取逻辑（使用df命令正确获取根目录磁盘信息）
+    4. 添加客户端注册容错机制（当客户端名称已存在时自动查找现有客户端）
+    5. 新增WebMvcConfig配置类（静态资源配置和欢迎页面配置）
+    6. 添加docker-compose.yml文件（项目根目录统一管理Docker配置）
+- [2026-05-22 10:15:00] 管理员：将Go客户端集成到Java服务容器中（同一容器部署）
+  - 影响范围：backend/Dockerfile, backend/start.sh, client/src/main.go
+  - 相关文档：deployment.md
 - [2026-05-22 10:10:00] 管理员：修复部署脚本中文乱码问题（将中文提示改为英文）
   - 影响范围：backend/deploy.bat
   - 相关文档：deployment.md
