@@ -85,11 +85,19 @@
    └─> 确保编译通过
    └─> 确保测试通过
 
-5. 更新Docker镜像并重新部署
-   └─> 停止现有容器：docker stop <container_name>
-   └─> 删除现有容器：docker rm <container_name>
-   └─> 重新构建镜像：docker build -t <image_name> .
-   └─> 启动新容器：docker run -d ... <image_name>
+5. 更新Docker镜像并重新部署（必须执行）
+   └─> **强制执行规则**：每次修改需求或代码后，必须自动更新Docker部署
+   └─> 方式一：使用部署脚本（推荐，自动执行）
+       - Windows: deploy.bat
+       - Linux/Mac: ./deploy.sh
+   └─> 方式二：使用docker-compose（手动执行）
+       - docker-compose down
+       - docker-compose up -d --build
+   └─> 方式三：手动操作（适合调试）
+       - docker stop <container_name>
+       - docker rm <container_name>
+       - docker build -t <image_name> .
+       - docker run -d ... <image_name>
 
 6. 提交代码
    └─> git commit

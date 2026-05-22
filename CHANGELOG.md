@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 监控数据查询API
 
 ### Changed
+- [2026-05-22 09:55:00] 管理员：增加强制部署规则（每次修改需求或代码后必须更新Docker部署）
+  - 影响范围：AGENTS.md, backend/deploy.bat, backend/deploy.sh
+  - 相关文档：AGENTS.md, deployment.md
 - [2026-05-22 09:50:00] 管理员：更新Docker部署规则（增加docker-compose和热更新方式）
   - 影响范围：AGENTS.md
   - 相关文档：AGENTS.md, deployment.md
