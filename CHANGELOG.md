@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 监控数据查询API
 
 ### Changed
+- [2026-05-22 10:10:00] 管理员：修复部署脚本中文乱码问题（将中文提示改为英文）
+  - 影响范围：backend/deploy.bat
+  - 相关文档：deployment.md
+- [2026-05-22 10:00:00] 管理员：增强Docker部署强制规则（添加4.4节专门的部署规则条款）
+  - 影响范围：AGENTS.md
+  - 相关文档：AGENTS.md
 - [2026-05-22 09:55:00] 管理员：增加强制部署规则（每次修改需求或代码后必须更新Docker部署）
   - 影响范围：AGENTS.md, backend/deploy.bat, backend/deploy.sh
   - 相关文档：AGENTS.md, deployment.md
