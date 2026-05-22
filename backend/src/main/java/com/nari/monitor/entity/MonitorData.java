@@ -38,6 +38,9 @@ public class MonitorData {
     @Column(name = "disk_used")
     private Long diskUsed;
 
+    @Column(name = "disk_mount", length = 100)
+    private String diskMount;
+
     @Column(name = "process_count")
     private Integer processCount;
 
@@ -85,6 +88,9 @@ public class MonitorData {
 
     public Long getDiskUsed() { return diskUsed; }
     public void setDiskUsed(Long diskUsed) { this.diskUsed = diskUsed; }
+
+    public String getDiskMount() { return diskMount; }
+    public void setDiskMount(String diskMount) { this.diskMount = diskMount; }
 
     public Integer getProcessCount() { return processCount; }
     public void setProcessCount(Integer processCount) { this.processCount = processCount; }

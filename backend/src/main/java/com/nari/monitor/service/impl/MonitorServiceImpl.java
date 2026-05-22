@@ -1,5 +1,8 @@
 package com.nari.monitor.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nari.monitor.dto.MonitorDataQueryRequest;
 import com.nari.monitor.dto.MonitorDataRequest;
 import com.nari.monitor.dto.MonitorDataResponse;
@@ -35,6 +38,9 @@ public class MonitorServiceImpl implements MonitorService {
     @Autowired
     private ClientRepository clientRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Override
     @Transactional
     public void reportMonitorData(MonitorDataRequest request) {
@@ -53,8 +59,17 @@ public class MonitorServiceImpl implements MonitorService {
         data.setDiskUsage(request.getDiskUsage());
         data.setDiskTotal(request.getDiskTotal());
         data.setDiskUsed(request.getDiskUsed());
+        data.setDiskMount(request.getDiskMount());
         data.setProcessCount(request.getProcessCount());
-        data.setProcessInfo(request.getProcessInfo());
+        if (request.getProcessList() != null) {
+            try {
+                data.setProcessInfo(objectMapper.writeValueAsString(request.getProcessList()));
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to serialize process list: {}", e.getMessage());
+            }
+        } else {
+            data.setProcessInfo(request.getProcessInfo());
+        }
         data.setReportTime(request.getReportTime() != null ? request.getReportTime() : LocalDateTime.now());
 
         monitorDataRepository.save(data);
@@ -126,8 +141,17 @@ public class MonitorServiceImpl implements MonitorService {
         response.setDiskUsage(data.getDiskUsage());
         response.setDiskTotal(data.getDiskTotal());
         response.setDiskUsed(data.getDiskUsed());
+        response.setDiskMount(data.getDiskMount());
         response.setProcessCount(data.getProcessCount());
         response.setProcessInfo(data.getProcessInfo());
+        if (data.getProcessInfo() != null) {
+            try {
+                JsonNode processList = objectMapper.readTree(data.getProcessInfo());
+                response.setProcessList(processList);
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to deserialize process list: {}", e.getMessage());
+            }
+        }
         response.setReportTime(data.getReportTime());
         response.setCreatedAt(data.getCreatedAt());
         return response;

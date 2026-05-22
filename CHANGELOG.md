@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 监控数据查询API
 
 ### Changed
+- [2026-05-22 15:35:00] 管理员：完善进程信息监控和前端界面优化
+  - 影响范围：backend/src/main/java/com/nari/monitor/dto/MonitorDataRequest.java, backend/src/main/java/com/nari/monitor/dto/MonitorDataResponse.java, backend/src/main/java/com/nari/monitor/entity/MonitorData.java, backend/src/main/java/com/nari/monitor/service/impl/MonitorServiceImpl.java, backend/src/main/resources/static/html/index.html, client/src/main.go
+  - 相关文档：design.md
+  - 变更内容：
+    1. 扩展Go客户端进程信息收集（获取PID、进程名、用户、CPU、内存、状态、命令行）
+    2. 添加磁盘挂载路径显示
+    3. 修复前端磁盘详情图标显示问题
+    4. 优化前端进程列表显示（表格形式展示）
+    5. 更新后端DTO和实体类支持新字段
 - [2026-05-22 14:30:00] 管理员：优化前端页面显示效果和修复多个功能问题
   - 影响范围：backend/src/main/resources/static/html/index.html, client/src/main.go, backend/Dockerfile, backend/src/main/java/com/nari/monitor/config/WebMvcConfig.java
   - 相关文档：design.md

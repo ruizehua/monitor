@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -29,18 +31,19 @@ type RegisterResponse struct {
 }
 
 type MonitorData struct {
-	ClientId            int     `json:"clientId"`
-	CpuUsage            float64 `json:"cpuUsage"`
-	PhysicalMemoryUsed  int64   `json:"physicalMemoryUsed"`
-	PhysicalMemoryTotal int64   `json:"physicalMemoryTotal"`
-	VirtualMemoryUsed   int64   `json:"virtualMemoryUsed"`
-	VirtualMemoryTotal  int64   `json:"virtualMemoryTotal"`
-	DiskUsage           float64 `json:"diskUsage"`
-	DiskTotal           int64   `json:"diskTotal"`
-	DiskUsed            int64   `json:"diskUsed"`
-	ProcessCount        int     `json:"processCount"`
-	ProcessInfo         string  `json:"processInfo"`
-	ReportTime          string  `json:"reportTime"`
+	ClientId            int           `json:"clientId"`
+	CpuUsage            float64       `json:"cpuUsage"`
+	PhysicalMemoryUsed  int64         `json:"physicalMemoryUsed"`
+	PhysicalMemoryTotal int64         `json:"physicalMemoryTotal"`
+	VirtualMemoryUsed   int64         `json:"virtualMemoryUsed"`
+	VirtualMemoryTotal  int64         `json:"virtualMemoryTotal"`
+	DiskUsage           float64       `json:"diskUsage"`
+	DiskTotal           int64         `json:"diskTotal"`
+	DiskUsed            int64         `json:"diskUsed"`
+	DiskMount           string        `json:"diskMount"`
+	ProcessCount        int           `json:"processCount"`
+	ProcessList         []ProcessInfo `json:"processList"`
+	ReportTime          string        `json:"reportTime"`
 }
 
 var (
@@ -185,8 +188,10 @@ func reportMonitorData() {
 			data.VirtualMemoryUsed, data.VirtualMemoryTotal = getVirtualMemoryInfo()
 		case "disk_usage":
 			data.DiskUsage, data.DiskTotal, data.DiskUsed = getDiskUsage()
+			data.DiskMount = "/"
 		case "process_info":
 			data.ProcessCount = getProcessCount()
+			data.ProcessList = getProcessList()
 		}
 	}
 
@@ -454,11 +459,28 @@ func getLinuxDiskUsage() (usage float64, total, used int64) {
 	return 0, 0, 0
 }
 
+type ProcessInfo struct {
+	PID     int     `json:"pid"`
+	Name    string  `json:"name"`
+	User    string  `json:"user"`
+	CPU     float64 `json:"cpu"`
+	Memory  float64 `json:"memory"`
+	Status  string  `json:"status"`
+	Command string  `json:"command"`
+}
+
 func getProcessCount() int {
 	if runtime.GOOS == "windows" {
 		return getWindowsProcessCount()
 	}
 	return getLinuxProcessCount()
+}
+
+func getProcessList() []ProcessInfo {
+	if runtime.GOOS == "windows" {
+		return getWindowsProcessList()
+	}
+	return getLinuxProcessList()
 }
 
 func getWindowsProcessCount() int {
@@ -489,4 +511,88 @@ func getLinuxProcessCount() int {
 		}
 	}
 	return count
+}
+
+func getLinuxProcessList() []ProcessInfo {
+	var processes []ProcessInfo
+	files, err := os.ReadDir("/proc")
+	if err != nil {
+		log.Printf("Failed to read /proc: %v", err)
+		return processes
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			if pid, err := strconv.Atoi(file.Name()); err == nil {
+				procPath := "/proc/" + file.Name()
+				cmdline, _ := os.ReadFile(procPath + "/cmdline")
+				status, _ := os.ReadFile(procPath + "/status")
+				stat, _ := os.ReadFile(procPath + "/stat")
+
+				process := ProcessInfo{PID: pid}
+
+				cmdParts := strings.Split(strings.ReplaceAll(string(cmdline), "\x00", " "), " ")
+				if len(cmdParts) > 0 && cmdParts[0] != "" {
+					process.Name = filepath.Base(cmdParts[0])
+				} else {
+					process.Name = "unknown"
+				}
+
+				for _, line := range strings.Split(string(status), "\n") {
+					if strings.HasPrefix(line, "Name:") {
+						fields := strings.Fields(line)
+						if len(fields) > 1 {
+							process.Name = fields[1]
+						}
+					}
+					if strings.HasPrefix(line, "Uid:") {
+						fields := strings.Fields(line)
+						if len(fields) > 1 {
+							uid, _ := strconv.Atoi(fields[1])
+							process.User = fmt.Sprintf("uid:%d", uid)
+						}
+					}
+					if strings.HasPrefix(line, "State:") {
+						fields := strings.Fields(line)
+						if len(fields) > 1 {
+							process.Status = fields[1]
+						}
+					}
+				}
+
+				statFields := strings.Fields(string(stat))
+				if len(statFields) >= 24 {
+					utime, _ := strconv.ParseInt(statFields[13], 10, 64)
+					stime, _ := strconv.ParseInt(statFields[14], 10, 64)
+					cutime, _ := strconv.ParseInt(statFields[15], 10, 64)
+					cstime, _ := strconv.ParseInt(statFields[16], 10, 64)
+					totalTime := utime + stime + cutime + cstime
+					process.CPU = float64(totalTime) / float64(100)
+
+					vsize, _ := strconv.ParseInt(statFields[22], 10, 64)
+					process.Memory = float64(vsize) / (1024 * 1024)
+				}
+
+				process.Command = strings.ReplaceAll(string(cmdline), "\x00", " ")
+				if len(process.Command) > 100 {
+					process.Command = process.Command[:100] + "..."
+				}
+
+				processes = append(processes, process)
+			}
+		}
+	}
+
+	sort.Slice(processes, func(i, j int) bool {
+		return processes[i].Memory > processes[j].Memory
+	})
+
+	if len(processes) > 10 {
+		return processes[:10]
+	}
+	return processes
+}
+
+func getWindowsProcessList() []ProcessInfo {
+	return []ProcessInfo{}
 }

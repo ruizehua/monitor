@@ -550,12 +550,13 @@
                     </div>
                     <div class="detail-section">
                         <h4>
-                            <span class="material-icons">hard_drive</span>
+                            <span class="material-icons">storage</span>
                             磁盘详情
                         </h4>
                         <p>磁盘总量: <span id="diskTotal">-</span></p>
                         <p>已使用: <span id="diskUsed">-</span></p>
                         <p>剩余空间: <span id="diskFree">-</span></p>
+                        <p>挂载路径: <span id="diskMount">/</span></p>
                     </div>
                     <div class="detail-section">
                         <h4>
@@ -563,6 +564,22 @@
                             进程信息
                         </h4>
                         <p>进程数量: <span id="processCount">-</span></p>
+                        <div id="processTableContainer" style="margin-top: 12px; max-height: 200px; overflow-y: auto;">
+                            <table id="processTable" style="width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: rgba(99, 102, 241, 0.1);">
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #94a3b8;">PID</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #94a3b8;">进程名</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #94a3b8;">用户</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #94a3b8;">CPU%</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #94a3b8;">内存(MB)</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #94a3b8;">状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="processTableBody">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <div class="last-update" id="lastUpdate">最后更新: -</div>
                 </div>
@@ -768,8 +785,56 @@
             document.getElementById('diskTotal').textContent = formatBytes(data.diskTotal);
             document.getElementById('diskUsed').textContent = formatBytes(data.diskUsed);
             document.getElementById('diskFree').textContent = formatBytes((data.diskTotal || 0) - (data.diskUsed || 0));
+            document.getElementById('diskMount').textContent = data.diskMount || '/';
             document.getElementById('processCount').textContent = data.processCount || 0;
+            
+            renderProcessList(data.processList || []);
+            
             document.getElementById('lastUpdate').textContent = '最后更新: ' + new Date().toLocaleString('zh-CN');
+        }
+
+        function renderProcessList(processes) {
+            const tbody = document.getElementById('processTableBody');
+            if (processes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 10px; color: #94a3b8;">暂无进程数据</td></tr>';
+                return;
+            }
+            tbody.innerHTML = processes.map(p => `
+                <tr style="border-bottom: 1px solid #334155;">
+                    <td style="padding: 6px 8px; color: #f1f5f9;">${p.pid}</td>
+                    <td style="padding: 6px 8px; color: #f1f5f9;">${p.name || '-'}</td>
+                    <td style="padding: 6px 8px; color: #94a3b8;">${p.user || '-'}</td>
+                    <td style="padding: 6px 8px; color: #10b981;">${p.cpu ? p.cpu.toFixed(1) : '0'}%</td>
+                    <td style="padding: 6px 8px; color: #3b82f6;">${p.memory ? p.memory.toFixed(1) : '0'}</td>
+                    <td style="padding: 6px 8px;">
+                        <span style="padding: 2px 8px; border-radius: 10px; font-size: 10px; ${getStatusStyle(p.status)}">
+                            ${getStatusText(p.status)}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusStyle(status) {
+            if (!status) return 'background: rgba(148, 163, 184, 0.2); color: #94a3b8;';
+            switch(status.toLowerCase()) {
+                case 'r': return 'background: rgba(16, 185, 129, 0.2); color: #10b981;';
+                case 's': return 'background: rgba(59, 130, 246, 0.2); color: #3b82f6;';
+                case 'd': return 'background: rgba(245, 158, 11, 0.2); color: #f59e0b;';
+                case 'z': return 'background: rgba(239, 68, 68, 0.2); color: #ef4444;';
+                default: return 'background: rgba(148, 163, 184, 0.2); color: #94a3b8;';
+            }
+        }
+
+        function getStatusText(status) {
+            if (!status) return '-';
+            switch(status.toLowerCase()) {
+                case 'r': return '运行中';
+                case 's': return '睡眠';
+                case 'd': return '不可中断';
+                case 'z': return '僵尸';
+                default: return status;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
